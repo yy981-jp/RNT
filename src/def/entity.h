@@ -22,4 +22,5 @@ struct Entry {
 	EntryId parent;
 	std::string name;
 	int depth;
+	bool isDir = false;
 };

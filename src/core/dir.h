@@ -1,3 +1,4 @@
+#pragma once
 #include <filesystem>
 #include <vector>
 #include <stack>
@@ -15,7 +16,7 @@ struct Ctx {
 	EntryId cid{};
 };
 
-void dir(Ctx& ctx, const fs::path& targetDir) {
+inline void dir(Ctx& ctx, const fs::path& targetDir) {
 	for (const auto& e: fs::directory_iterator(targetDir)) {
 		Entry ent{
 			.id = ctx.cid++,
@@ -26,6 +27,8 @@ void dir(Ctx& ctx, const fs::path& targetDir) {
 		ctx.entries.push_back(ent);
 
 		if (e.is_directory()) {
+			ctx.entries.back().isDir = true;
+
 			ctx.parents.push(ent.id);
 			ctx.depth++;
 			dir(ctx, e.path());
