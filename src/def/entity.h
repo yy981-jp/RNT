@@ -1,6 +1,10 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <vector>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 
 struct EntryId {
@@ -24,3 +28,19 @@ struct Entry {
 	int depth;
 	bool isDir = false;
 };
+
+inline fs::path resolvePath(EntryId target, const std::vector<Entry>& entries) {
+	std::vector<EntryId> chain;
+
+	for (auto id = target; id.isValid(); id = entries[id.value].parent) {
+		chain.push_back(id);
+	}
+
+	fs::path path;
+
+	for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
+		path /= entries[it->value].name;
+	}
+
+	return path;
+}
