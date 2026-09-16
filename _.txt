@@ -7,86 +7,59 @@
 
 
 c:\cpp\RNT\build>rnt
-\       ".ninja_deps"
-:       ".ninja_log"
-*       "build.ninja"
-?       "CMakeCache.txt"
-<       "CMakeFiles"/
->         "4.4.2"/
-|           "CMakeCXXCompiler.cmake"
-:\          "CMakeDetermineCompilerABI_CXX.bin"
-::          "CMakeRCCompiler.cmake"
-:*          "CMakeSystem.cmake"
-:?          "CompilerIdCXX"/
-:<            "a.exe"
-:>            "CMakeCXXCompilerId.cpp"
-:|            "tmp"/
-*\        "cmake.check_cache"
-*:        "CMakeConfigureLog.yaml"
-**        "InstallScripts.json"
-*?        "pkgRedirects"/
-*<        "rnt.dir"/
-*>          "CXX.dd"
-*|          "CXXDependInfo.json"
-?\          "CXXModules.json"
-?:          "src"/
-?*            "main.cpp.ddi"
-??            "main.cpp.obj"
-?<            "main.cpp.obj.ddi"
-?>            "main.cpp.obj.ddi.d"
-?|            "main.cpp.obj.ddi.i"
-<\            "main.cpp.obj.modmap"
-<:        "rules.ninja"
-<*        "TargetDirectories.txt"
-<?      "cmake_install.cmake"
-<<      "compile_commands.json"
-<>      "rnt.exe"
-
-
-	// インデントの追加
-	result.append(e.depth * 2, ' ');
-	
-	// 一時オブジェクトを作らず直接 result へ追加
-	result.append("<\"");
-	result.append(e.name);
-	result.append("\">");
-	if (e.isDir) result.push_back('/');
-	
-	result.append("          ");
-	result.append(BaseNum::encode(e.id.value));
-	result.push_back('\n');
-c:\cpp\RNT\build>rnt
-<".ninja_deps">          \
-<".ninja_log">          :
-<"build.ninja">          *
-<"CMakeCache.txt">          |
-<"CMakeFiles">/          :\
-  <"4.4.2">/          ::
-    <"CMakeCXXCompiler.cmake">          :*
-    <"CMakeDetermineCompilerABI_CXX.bin">          :|
-    <"CMakeRCCompiler.cmake">          *\
-    <"CMakeSystem.cmake">          *:
-    <"CompilerIdCXX">/          **
-      <"a.exe">          *|
-      <"CMakeCXXCompilerId.cpp">          |\
-      <"tmp">/          |:
-  <"cmake.check_cache">          |*
-  <"CMakeConfigureLog.yaml">          ||
-  <"InstallScripts.json">          :\\
-  <"pkgRedirects">/          :\:
-  <"rnt.dir">/          :\*
-    <"CXX.dd">          :\|
-    <"CXXDependInfo.json">          ::\
-    <"CXXModules.json">          :::
-    <"src">/          ::*
-      <"main.cpp.ddi">          ::|
-      <"main.cpp.obj">          :*\
-      <"main.cpp.obj.ddi">          :*:
-      <"main.cpp.obj.ddi.d">          :**
-      <"main.cpp.obj.ddi.i">          :*|
-      <"main.cpp.obj.modmap">          :|\
-  <"rules.ninja">          :|:
-  <"TargetDirectories.txt">          :|*
-<"cmake_install.cmake">          :||
-<"compile_commands.json">          *\\
-<"rnt.exe">          *\:
+\		".ninja_deps"
+:		".ninja_log"
+*		"build.ninja"
+?		"CMakeCache.txt"
+<		"CMakeFiles"/
+>			"4.4.3"/
+|				"CMakeCXXCompiler.cmake"
+:\				"CMakeDetermineCompilerABI_CXX.bin"
+::				"CMakeRCCompiler.cmake"
+:*				"CMakeSystem.cmake"
+:?				"CompilerIdCXX"/
+:<					"a.exe"
+:>					"CMakeCXXCompilerId.cpp"
+:|					"tmp"/
+*\			"cmake.check_cache"
+*:			"CMakeConfigureLog.yaml"
+**			"InstallScripts.json"
+*?			"pkgRedirects"/
+*<			"rnt.dir"/
+*>				"CXX.dd"
+*|				"CXXDependInfo.json"
+?\				"CXXModules.json"
+?:				"src"/
+?*					"core"/
+??						"config.cpp.ddi"
+?<						"config.cpp.obj"
+?>						"config.cpp.obj.ddi"
+?|						"config.cpp.obj.ddi.d"
+<\						"config.cpp.obj.ddi.i"
+<:						"config.cpp.obj.modmap"
+<*						"texter.cpp.ddi"
+<?						"texter.cpp.obj"
+<<						"texter.cpp.obj.ddi"
+<>						"texter.cpp.obj.ddi.d"
+<|						"texter.cpp.obj.ddi.i"
+>\						"texter.cpp.obj.modmap"
+>:					"main.cpp.ddi"
+>*					"main.cpp.obj"
+>?					"main.cpp.obj.ddi"
+><					"main.cpp.obj.ddi.d"
+>>					"main.cpp.obj.ddi.i"
+>|					"main.cpp.obj.modmap"
+|\					"util"/
+|:						"json.cpp.ddi"
+|*						"json.cpp.obj"
+|?						"json.cpp.obj.ddi"
+|<						"json.cpp.obj.ddi.d"
+|>						"json.cpp.obj.ddi.i"
+||						"json.cpp.obj.modmap"
+:\\			"rules.ninja"
+:\:			"TargetDirectories.txt"
+:\*		"cmake_install.cmake"
+:\?		"compile_commands.json"
+:\<		"rnt.exe"
+:\>		"system.json"
+:\|		"test.log"

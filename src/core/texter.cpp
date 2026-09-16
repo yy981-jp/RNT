@@ -7,6 +7,14 @@
 #include <fstream>
 
 
+namespace {
+	constexpr int MARGIN = 2, TABSIZE = 4;
+}
+
+
+
+
+
 const std::vector<std::string> BaseNum::reserved = {
 	"\\", ":", "*", "?", "<", ">", "|"
 };
@@ -56,12 +64,14 @@ uint64_t BaseNum::decode(std::string_view str) {
 
 
 
+
+
 std::string Texter::getText() {
 	std::string result;
 	// あらかじめ大きなメモリ領域を一括で確保しておく
 	result.reserve(entries.size() * 64);
 
-	const size_t maxIndent = BaseNum::encode(entries.back().id.value).size() / 4;
+	idIndentWidth = BaseNum::encode(entries.back().id.value).size() / TABSIZE;
 
 	for (const auto& e: entries) {
 		// id
@@ -70,7 +80,7 @@ std::string Texter::getText() {
 		result.append(id);
 
 		// id indent
-		int tab_num = ( maxIndent - (idSize / 4) ) + 2;
+		int tab_num = ( idIndentWidth - (idSize / TABSIZE) ) + MARGIN;
 		result.append(tab_num, '\t');
 
 		// file indent
@@ -90,7 +100,7 @@ std::string Texter::getText() {
 }
 
 
-std::vector<Entry> Texter::edit(Config& config, const fs::path& target) {
+std::span<const Entry> Texter::edit(Config& config, const fs::path& target) {
 	std::string text = getText();
 
 	fs::path tempF = fs::temp_directory_path() / std::format("RNT-{}.txt", std::hash<fs::path>{}(target));
@@ -113,5 +123,97 @@ std::vector<Entry> Texter::edit(Config& config, const fs::path& target) {
 			std::istreambuf_iterator<char>(ifs),
 			std::istreambuf_iterator<char>()
 		);
+	}
+
+	// solve
+	TxCtx ctx{};
+	ctx.entries.resize(entries.size());
+	solve(ctx, text);
+	changedEntries = std::move(ctx.entries);
+
+	return changedEntries;
+}
+
+
+void Texter::solve(TxCtx& ctx, std::string_view str) {
+	ok = true;
+	line_pos = 0;
+
+	for (auto e: str | std::views::split('\n')) {
+		auto first = std::ranges::begin(e);
+		auto last = std::ranges::end(e);
+		std::string_view line(first, last);
+
+		if (line.empty()) continue;
+
+		// EntryId
+		size_t id_end = line.find('\t');
+		if (id_end == std::string_view::npos) return error("The end of EntryId could not be found.");
+		EntryId id;
+		id.value = BaseNum::decode(line.substr(0, id_end));
+
+		// name
+		size_t name_begin = line.find('"');
+		if (name_begin == std::string_view::npos) return error("The begin of name could not be found.");
+
+		size_t name_end = line.find_last_of('"');
+		if (name_end == std::string_view::npos || name_end <= name_begin)
+			return error("The end of name could not be found.");
+
+		std::string_view name =
+			line.substr(name_begin + 1, name_end - name_begin - 1);
+		if (name.empty()) return error("Name is empty");
+
+		// depth
+		int id_tab = idIndentWidth - static_cast<int>(id_end / TABSIZE) + MARGIN;
+		int depth = static_cast<int>(name_begin - id_end - id_tab);
+
+		// printf("%llu: %d\n", id.value, depth);
+
+		/*
+			現在のdepth以上の親は、
+			現在のEntryのparentにはならない
+
+			例:
+			    A/  depth 0
+			        B/  depth 1
+			            C  depth 2
+			            D  depth 2
+			        E  depth 1
+
+			Dを処理するとき parents = [A,B]
+			Eを処理するとき Bは同じdepth1なのでpopする
+		*/
+		while (!ctx.parents.empty()) {
+			EntryId parent_id = ctx.parents.top();
+
+			if (ctx.entries[parent_id.value].depth < depth)
+				break;
+
+			ctx.parents.pop();
+		}
+
+		EntryId parent =
+			ctx.parents.empty()
+				? EntryId::INVALID()
+				: ctx.parents.top();
+
+		Entry ent_data{
+			.id = id,
+			.parent = parent,
+			.name = std::string{name},
+			.depth = depth
+		};
+
+		auto& ent = ctx.entries[id.value];
+		ent = std::move(ent_data);
+
+		// dir判定
+		if (line[name_end] == '/') {
+			ent.isDir = true;
+			ctx.parents.push(ent.id);
+		}
+
+		line_pos++;
 	}
 }

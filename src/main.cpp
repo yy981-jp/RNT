@@ -1,6 +1,3 @@
-#include <iostream>
-#include <fstream>
-
 #include <core/dir.h>
 #include <core/texter.h>
 #include <core/launcher.h>
@@ -28,8 +25,6 @@ int main(int argc, char *argv[]) {
 	Texter texter(ctx.entries);
 
 	// ユーザーに操作させる
-	std::vector<Entry> changedEntries = texter.edit(config, target);
-
-	
+	const std::span<const Entry> changedEntries = texter.edit(config, target);
 
 }

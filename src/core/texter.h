@@ -2,6 +2,7 @@
 #include <vector>
 
 #include <core/config.h>
+#include <core/dir.h>
 #include <def/entity.h>
 
 
@@ -16,12 +17,39 @@ public:
 };
 
 
+struct TxCtx {
+	std::vector<Entry> entries;
+	std::stack<EntryId> parents;
+	int depth = 0;
+};
+
+
+
 class Texter {
 	const std::vector<Entry>& entries;
+	std::vector<Entry> changedEntries;
+
+	size_t idIndentWidth = 0;
+
+	bool ok = false;
+	std::string errorMsg;
+	size_t line_pos = 0;
+
+	void error(const std::string& str) {
+		errorMsg = std::format("Line %d:  %s", line_pos+1, str.c_str());
+		ok = false;
+	}
+
+	void solve(TxCtx& ctx, std::string_view str);
 
 public:
 	Texter(const std::vector<Entry>& entries): entries(entries) {}
 
 	std::string getText();
-	std::vector<Entry> edit(Config& config, const fs::path& target);
+	std::span<const Entry> edit(Config& config, const fs::path& target);
+
+	std::string status() {
+		if (ok) return {};
+		return errorMsg;
+	}
 };
