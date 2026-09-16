@@ -11,7 +11,7 @@ void Config::init() {
 		int i = 1;
 		const auto& editors = baseConfig.at("editor");
 		for (const auto& e: editors) {
-			std::cout << i << ". " << e["name"] << "\n";
+			std::cout << i << ". " << e["name"].get<std::string>() << "\n";
 			i++;
 		}
 
@@ -19,7 +19,7 @@ void Config::init() {
 		std::cout << "Which text editor should I use? ";
 		std::cin >> choice;
 
-		config["editor"] = editors[choice-1];
+		config["editor"] = choice - 1;
 
 		std::cout << "\n";
 	}
@@ -45,5 +45,9 @@ void Config::init() {
 
 	save();
 
-	std::cout << "Setup completed.\n\n\n\n";	
+	std::cout << "Setup completed.\n"
+				 "If you want to change the settings, please edit or delete the settings file.\n"
+			  << "settings file: " << configPath << "\n";	
+
+	exit(0);
 }

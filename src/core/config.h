@@ -27,7 +27,7 @@ class Config {
 public:
 	Config(const std::string& path): configPath(path) {
 		baseConfig = readJson("system.json");
-		if (!fs::exists(path)) init();
+		if (!fs::exists(path) || fs::is_empty(path)) init();
 		config = readJson(path);
 		if (config.empty()) init();
 	}
