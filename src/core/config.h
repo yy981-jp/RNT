@@ -33,6 +33,7 @@ public:
 	}
 
 	json& get() { return config; }
+	const json& getSys() const { return baseConfig; }
 	void save() { writeJson(config, configPath); }
 
 };

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include <core/dir.h>
 #include <core/texter.h>
@@ -27,5 +28,15 @@ int main(int argc, char *argv[]) {
 	Texter text(ctx.entries);
 	// auto debug = resolvePath(ctx.entries[33].id, ctx.entries).string();
 	// printf("%s\n",debug.c_str() );
-	std::cout << text.getText();
+	
+	fs::path tempF = fs::temp_directory_path() / std::format("RNT-{}.txt", std::hash<fs::path>{}(target));
+	std::ofstream ofs(tempF);
+	{
+		if (!ofs) throw std::runtime_error("RNT couldn't open temp file.");
+		ofs << text.getText();
+		ofs.flush();
+	}
+
+	json te = config.getSys()["editor"][config.get().at("editor").get<int>()];
+	launchTextEditor(te["path"].get<std::string>(), te["arg"].get<std::string>(), tempF.string());
 }

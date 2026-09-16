@@ -25,6 +25,7 @@ add_executable(${EXE_NAME} ${SOURCES})
 
 target_include_directories(${EXE_NAME} PRIVATE
 	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/external/
 )
 
 # External install prefix
