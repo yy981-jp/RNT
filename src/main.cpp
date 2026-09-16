@@ -25,18 +25,11 @@ int main(int argc, char *argv[]) {
 	Ctx ctx{};
 	dir(ctx, target);
 
-	Texter text(ctx.entries);
-	// auto debug = resolvePath(ctx.entries[33].id, ctx.entries).string();
-	// printf("%s\n",debug.c_str() );
-	
-	fs::path tempF = fs::temp_directory_path() / std::format("RNT-{}.txt", std::hash<fs::path>{}(target));
-	std::ofstream ofs(tempF);
-	{
-		if (!ofs) throw std::runtime_error("RNT couldn't open temp file.");
-		ofs << text.getText();
-		ofs.flush();
-	}
+	Texter texter(ctx.entries);
 
-	json te = config.getSys()["editor"][config.get().at("editor").get<int>()];
-	launchTextEditor(te["path"].get<std::string>(), te["arg"].get<std::string>(), tempF.string());
+	// ユーザーに操作させる
+	std::vector<Entry> changedEntries = texter.edit(config, target);
+
+	
+
 }

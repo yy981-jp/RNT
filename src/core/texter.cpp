@@ -1,7 +1,10 @@
 #include <core/texter.h>
+#include <core/launcher.h>
+#include <util/json.h>
 
 #include <algorithm>
 #include <stdexcept>
+#include <fstream>
 
 
 const std::vector<std::string> BaseNum::reserved = {
@@ -84,4 +87,31 @@ std::string Texter::getText() {
 	}
 
 	return result;
+}
+
+
+std::vector<Entry> Texter::edit(Config& config, const fs::path& target) {
+	std::string text = getText();
+
+	fs::path tempF = fs::temp_directory_path() / std::format("RNT-{}.txt", std::hash<fs::path>{}(target));
+	{
+		std::ofstream ofs(tempF);
+		if (!ofs) throw std::runtime_error("RNT couldn't open temp file. (ofs)");
+		ofs << text;
+		ofs.flush();
+	}
+
+	json te = config.getSys()["editor"][config.get().at("editor").get<int>()];
+	launchTextEditor(te["path"].get<std::string>(), te["arg"].get<std::string>(), tempF.string());
+
+	text.clear();
+	{
+		std::ifstream ifs(tempF);
+		if (!ifs) throw std::runtime_error("RNT couldn't open temp file. (ifs)");
+
+		text.assign(
+			std::istreambuf_iterator<char>(ifs),
+			std::istreambuf_iterator<char>()
+		);
+	}
 }

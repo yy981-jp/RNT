@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 
+#include <core/config.h>
 #include <def/entity.h>
 
 
@@ -22,4 +23,5 @@ public:
 	Texter(const std::vector<Entry>& entries): entries(entries) {}
 
 	std::string getText();
+	std::vector<Entry> edit(Config& config, const fs::path& target);
 };
