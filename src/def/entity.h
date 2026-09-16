@@ -2,9 +2,8 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-#include <filesystem>
 
-namespace fs = std::filesystem;
+#include <def/fs.h>
 
 
 struct EntryId {

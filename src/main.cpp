@@ -2,9 +2,21 @@
 
 #include <core/dir.h>
 #include <core/texter.h>
+#include <core/launcher.h>
+#include <core/config.h>
+
+
+struct SDLApp {
+	SDLApp() { SDL_Init(0); }
+	~SDLApp() { SDL_Quit(); }
+};
 
 
 int main(int argc, char *argv[]) {
+	SDLApp sdlapp;
+
+	Config config((getDataPath() / "config.json").string());
+
 	fs::path target;
 	if (argc < 2) target = fs::current_path();
 	else target = fs::path(argv[1]);
@@ -12,10 +24,8 @@ int main(int argc, char *argv[]) {
 	Ctx ctx{};
 	dir(ctx, target);
 
-	// for (const auto& e: ctx.entries) {
-	// 	printf("%llu-%llu:\t%s\n", e.id.value, e.parent.value, e.name.c_str());
-	// }
-
 	Texter text(ctx.entries);
+	// auto debug = resolvePath(ctx.entries[33].id, ctx.entries).string();
+	// printf("%s\n",debug.c_str() );
 	std::cout << text.getText();
 }

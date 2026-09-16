@@ -1,12 +1,9 @@
 #pragma once
-#include <filesystem>
 #include <vector>
 #include <stack>
 
 #include <def/entity.h>
-
-
-namespace fs = std::filesystem;
+#include <def/fs.h>
 
 
 struct Ctx {
