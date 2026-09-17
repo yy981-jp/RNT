@@ -2,7 +2,7 @@
 #include <vector>
 #include <stack>
 
-#include <def/entity.h>
+#include <def/entry.h>
 #include <def/fs.h>
 
 

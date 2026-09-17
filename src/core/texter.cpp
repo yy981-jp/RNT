@@ -100,7 +100,7 @@ std::string Texter::getText() {
 }
 
 
-std::span<const Entry> Texter::edit(Config& config, const fs::path& target) {
+std::vector<Entry>& Texter::edit(Config& config, const fs::path& target) {
 	std::string text = getText();
 
 	fs::path tempF = fs::temp_directory_path() / std::format("RNT-{}.txt", std::hash<fs::path>{}(target));
@@ -126,18 +126,21 @@ std::span<const Entry> Texter::edit(Config& config, const fs::path& target) {
 	}
 
 	// solve
-	TxCtx ctx{};
-	ctx.entries.resize(entries.size());
-	solve(ctx, text);
-	changedEntries = std::move(ctx.entries);
-
+	changedEntries.resize(entries.size());
+	solve(text);
+	
 	return changedEntries;
 }
 
 
-void Texter::solve(TxCtx& ctx, std::string_view str) {
+void Texter::solve(std::string_view str) {
 	ok = true;
 	line_pos = 0;
+
+	std::stack<EntryId> parents;
+	std::vector<size_t> entryToIdx;
+	entryToIdx.reserve(entries.size());
+	
 
 	for (auto e: str | std::views::split('\n')) {
 		auto first = std::ranges::begin(e);
@@ -184,19 +187,18 @@ void Texter::solve(TxCtx& ctx, std::string_view str) {
 			Dを処理するとき parents = [A,B]
 			Eを処理するとき Bは同じdepth1なのでpopする
 		*/
-		while (!ctx.parents.empty()) {
-			EntryId parent_id = ctx.parents.top();
+		while (!parents.empty()) {
+			EntryId parent_id = parents.top();
 
-			if (ctx.entries[parent_id.value].depth < depth)
-				break;
+			if (changedEntries[parent_id.value].depth < depth) break;
 
-			ctx.parents.pop();
+			parents.pop();
 		}
 
 		EntryId parent =
-			ctx.parents.empty()
+			parents.empty()
 				? EntryId::INVALID()
-				: ctx.parents.top();
+				: parents.top();
 
 		Entry ent_data{
 			.id = id,
@@ -205,15 +207,21 @@ void Texter::solve(TxCtx& ctx, std::string_view str) {
 			.depth = depth
 		};
 
-		auto& ent = ctx.entries[id.value];
+		auto& ent = changedEntries[id.value];
 		ent = std::move(ent_data);
 
 		// dir判定
 		if (line[name_end] == '/') {
 			ent.isDir = true;
-			ctx.parents.push(ent.id);
+			parents.push(ent.id);
 		}
 
 		line_pos++;
 	}
+
+	if (line_pos != entries.size()) return error(
+		std::format(
+			"The number of entries does not match the number before the change."
+			" (%d -> %d)", entries.size(), line_pos)
+	);
 }

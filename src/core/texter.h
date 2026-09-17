@@ -3,7 +3,7 @@
 
 #include <core/config.h>
 #include <core/dir.h>
-#include <def/entity.h>
+#include <def/entry.h>
 
 
 class BaseNum {
@@ -14,13 +14,6 @@ public:
 	static size_t size();
 	static std::string encode(uint64_t num);
 	static uint64_t decode(std::string_view str);
-};
-
-
-struct TxCtx {
-	std::vector<Entry> entries;
-	std::stack<EntryId> parents;
-	int depth = 0;
 };
 
 
@@ -40,13 +33,13 @@ class Texter {
 		ok = false;
 	}
 
-	void solve(TxCtx& ctx, std::string_view str);
+	void solve(std::string_view str);
 
 public:
 	Texter(const std::vector<Entry>& entries): entries(entries) {}
 
 	std::string getText();
-	std::span<const Entry> edit(Config& config, const fs::path& target);
+	std::vector<Entry>& edit(Config& config, const fs::path& target);
 
 	std::string status() {
 		if (ok) return {};

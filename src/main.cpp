@@ -2,6 +2,7 @@
 #include <core/texter.h>
 #include <core/launcher.h>
 #include <core/config.h>
+#include <core/solver.h>
 
 
 struct SDLApp {
@@ -9,6 +10,10 @@ struct SDLApp {
 	~SDLApp() { SDL_Quit(); }
 };
 
+
+struct Ents {
+	std::vector<Entry> orig, changed;
+};
 
 int main(int argc, char *argv[]) {
 	SDLApp sdlapp;
@@ -19,12 +24,25 @@ int main(int argc, char *argv[]) {
 	if (argc < 2) target = fs::current_path();
 	else target = fs::path(argv[1]);
 
-	Ctx ctx{};
-	dir(ctx, target);
 
-	Texter texter(ctx.entries);
+	Ents ent;
+	{
 
-	// ユーザーに操作させる
-	const std::span<const Entry> changedEntries = texter.edit(config, target);
+		Ctx ctx{};
+		dir(ctx, target);
 
+		ent.orig = std::move( ctx.entries );
+
+		Texter texter(ent.orig);
+
+		// ユーザーに操作させる
+		ent.changed = std::move( texter.edit(config,target) );
+		const std::string& stat = texter.status();
+		if (!stat.empty()) throw std::runtime_error("Error: Texter: " + stat);
+
+	}
+
+	Solver solver(ent.orig, ent.changed);
+	solver.diff();
+	solver.debug();
 }

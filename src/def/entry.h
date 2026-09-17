@@ -10,7 +10,7 @@ struct EntryId {
 	uint64_t value = 0;
 
 	static EntryId INVALID() { return {UINT64_MAX}; }
-	bool isValid() { return value != INVALID().value; }
+	bool isValid() const { return value != INVALID().value; }
 
 	auto operator<=>(const EntryId&) const = default;
 	EntryId operator++(int) {
@@ -27,6 +27,14 @@ struct Entry {
 	int depth;
 	bool isDir = false;
 };
+
+template<>
+struct std::hash<EntryId> {
+	size_t operator()(const EntryId& id) const noexcept {
+		return std::hash<uint64_t>{}(id.value);
+	}
+};
+
 
 inline fs::path resolvePath(EntryId target, const std::vector<Entry>& entries) {
 	std::vector<EntryId> chain;
