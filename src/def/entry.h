@@ -36,11 +36,13 @@ struct std::hash<EntryId> {
 };
 
 
-inline fs::path resolvePath(EntryId target, const std::vector<Entry>& entries) {
+inline fs::path solvePath(const std::vector<Entry>& entries, EntryId target) {
 	std::vector<EntryId> chain;
 
+	chain.resize( entries[target.value].depth + 1 );
+
 	for (auto id = target; id.isValid(); id = entries[id.value].parent) {
-		chain.push_back(id);
+		chain[id.value] = id;
 	}
 
 	fs::path path;
