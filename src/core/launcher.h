@@ -30,9 +30,8 @@ inline void launchTextEditor(const std::string& editorPath, const std::string& a
     cm_args.push_back(nullptr); // 終端ポインタ
 
     SDL_Process* process = SDL_CreateProcess(cm_args.data(), false);
-    if (!process) {
-        return;
-    }
+    if (!process)
+        throw std::runtime_error(std::string{"launchTextEditor(): "} + SDL_GetError());
 
     int status = -1;
     SDL_WaitProcess(process, true, &status);

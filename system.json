@@ -4,6 +4,11 @@
 			"name": "Notepad++",
 			"path": "C:/Program Files/Notepad++/notepad++.exe",
 			"arg": "-multiInst -nosession -notabbar"
+		},
+		{
+			"name": "VSCode",
+			"path": "C:/Users/yy981/AppData/Local/Programs/Microsoft VS Code/Code.exe",
+			"arg": "--wait"
 		}
 	]
 }

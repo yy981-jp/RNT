@@ -33,36 +33,66 @@ class Solver {
 
 	std::vector<EntryId> changedId;
 
-	// beforeのパス → EntryId
-	std::unordered_map<fs::path, EntryId> beforePath;
-	// changedのパス → EntryId
-	std::unordered_map<fs::path, EntryId> changedPath;
+	std::unordered_map<Location, EntryId, LocationHash> beforeLocation;
 
-	std::unordered_map<EntryId, EntryId> dependency;
+	/*
+		dependencies[a.value].push_back(b);
+		aを実行するにはbの処理を先に行わなければならない
+	*/
+	std::vector<std::vector<EntryId>> dependencies;
 
 	void error(const std::string& str) {
 		errorMsg = str;
 		ok = false;
 	}
 
-	void genPathMap() {
+	/// @brief 最終状態の一意性を検証
+	void check_collide() {
 		for (const auto& e: before) {
-			beforePath[solvePath(before, e.id)];
+			beforeLocation[{e.parent, e.name}] = e.id;
 		}
+
+		std::unordered_map<Location, EntryId, LocationHash> changedLocation;
+
 		for (const auto& e: changed) {
-			changedPath[solvePath(changed, e.id)];
+			auto [it, inserted] = changedLocation.emplace(
+				Location{e.parent, e.name},
+				e.id
+			);
+
+			if (!inserted)
+				return error("Final Path collision.");
 		}
 	}
 
-public:
-	Solver(const std::vector<Entry>& before, const std::vector<Entry>& changed):
-		before(before), changed(changed) {}
+	/// @brief 現在位置の占有者から依存関係を作る
+	void gen_dep() {
+		for (EntryId id: changedId) {
+			const Entry& e = changed[id.value];
+			const Entry& beforeEntry = before[id.value];
 
-	void debug() {
-		for (auto e: changedId) printf("%llu, ", e.value);
-		printf("\n");
+			Location target{
+				e.parent,
+				e.name
+			};
+
+			auto it = beforeLocation.find(target);
+
+			if (it == beforeLocation.end())
+				continue;
+
+			EntryId owner = it->second;
+
+			// 自分自身なら依存不要
+			if (owner == id)
+				continue;
+
+			// ownerが移動した後でentryを移動する必要がある
+			dependencies[id.value].push_back(owner);
+		}
 	}
 
+	/// @brief 変更のあるEntryを取り出す
 	void diff() {
 		for (size_t i = 0; i < before.size(); i++) {
 			const Entry& a = before[i];
@@ -80,38 +110,30 @@ public:
 		}
 	}
 
+
+public:
+	Solver(const std::vector<Entry>& before, const std::vector<Entry>& changed):
+		before(before), changed(changed) {}
+
+	void debug() {
+		for (auto e: changedId) printf("%llu, ", e.value);
+		printf("\n");
+	}
+
 	void solve() {
-		std::unordered_map<fs::path, EntryId> beforePath;
+		diff();
+		if (!ok)
+			return;
 
-		for (const Entry& e: before) {
-			beforePath[solvePath(before, e.id)] = e.id;
-		}
+		check_collide();
+		if (!ok)
+			return;
 
-		for (const Entry& e: changed) {
-			if (
-				e.parent == before[e.id.value].parent &&
-				e.name == before[e.id.value].name
-			) continue;
+		gen_dep();
+		if (!ok)
+			return;
 
-			fs::path after = solvePath(changed, e.id);
+		// TODO: dependency graphから実行順序を決める
+	}
 
-			auto it = beforePath.find(after);
-
-			if (it == beforePath.end()) {
-				// 現在のentriesには存在しない
-				// → 外部ファイルとの衝突かもしれない
-				if (fs::exists(after))
-					return error("Target path already exists.");
-
-				continue;
-			}
-
-			if (it->second == e.id) {
-				// 自分自身
-				continue;
-			}
-
-			dependency[e.id] = it->second;
-		}
-	}	
 };
