@@ -15,9 +15,13 @@ struct DepTrace {
 	// 実行順に並んだEntry
 	std::vector<EntryId> chain;
 
-	bool looped = false;
-};
+	// loop部分のEntry数
+	size_t loopSize = 0;
 
+	bool looped() const {
+		return loopSize != 0;
+	}
+};
 
 struct Location {
 	EntryId parent;
@@ -82,21 +86,30 @@ class Solver {
 		EntryId curId = targetId;
 
 		while (curId.isValid()) {
-			if (processed[curId]) break;
-
-			const EntryId& dependOn = dependencies[curId];
-
-			if (!dependOn.isValid()) break;
-
-			if (std::ranges::contains(result.chain, dependOn)) {
-				result.looped = true;
+			if (processed[curId]) {
 				break;
 			}
 
+			processed[curId] = true;
 			result.chain.push_back(curId);
+
+			const EntryId& dependOn = dependencies[curId];
+
+			// 依存関係の終端
+			if (!dependOn.isValid()) break;
+
+			auto it = std::ranges::find(result.chain, dependOn);
+
+			if (it != result.chain.end()) {
+				const size_t findPos = it - result.chain.begin();
+				result.loopSize = result.chain.size() - findPos;
+				break;
+			}
+
 			curId = dependOn;
 		}
 
+		std::ranges::reverse(result.chain);
 		return result;
 	}
 
@@ -109,7 +122,7 @@ class Solver {
 		for (const EntryId& targetId: changedId) {
 			DepTrace trace = traceDep(targetId);
 
-			if (trace.looped) solveLoop(trace.chain);
+			if (trace.looped()) solveLoop(trace);
 			else solveChain(trace.chain);
 
 		}
@@ -125,27 +138,41 @@ class Solver {
 		}
 	}
 
-	void solveLoop(const std::vector<EntryId>& chain) {
+	void solveLoop(const DepTrace& trace) {
+		const auto& chain = trace.chain;
+		const size_t loopSize = trace.loopSize;
+
 		const EntryId& edge = chain.front();
-		fs::path tmp = createEvPath(edge); // 一時退避先
+		fs::path tmp = createEvPath(edge);
 
 		fsOperates.emplace_back(FsOperate{
 			.from = solvePath(before, edge),
 			.to = tmp,
 		});
 
-		// 2つ目から通常chainと同じように処理
-		for (auto it = chain.begin()+1; it != chain.end(); ++it) {
+		for (size_t i = 1; i < loopSize; ++i) {
+			const EntryId& e = chain[i];
+
 			fsOperates.emplace_back(FsOperate{
-				.from = solvePath(before,*it),
-				.to = solvePath(changed,*it),
+				.from = solvePath(before, e),
+				.to = solvePath(changed, e),
 			});
 		}
 
 		fsOperates.emplace_back(FsOperate{
 			.from = tmp,
-			.to = solvePath(changed,edge)
+			.to = solvePath(changed, edge)
 		});
+
+		// loopの外側
+		for (size_t i = loopSize; i < chain.size(); ++i) {
+			const EntryId& e = chain[i];
+
+			fsOperates.emplace_back(FsOperate{
+				.from = solvePath(before, e),
+				.to = solvePath(changed, e),
+			});
+		}
 	}
 
 
