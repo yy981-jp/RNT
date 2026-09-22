@@ -1,12 +1,34 @@
 #pragma once
 #include <def/entry.h>
+#include <util/fs.h>
 
 #include <unordered_map>
+#include <algorithm>
 
 
-enum class OpType {
-	rename, move,
+// TODO:
+namespace {
+	void solveChain(const std::vector<EntryId>& id) {}
+	void solveLoop(const std::vector<EntryId>& id) {}
+}
+
+
+struct FsOperate {
+	fs::path from, to;
 };
+
+
+enum class TraceResult {
+	complete,
+	loop,
+	processed,
+};
+
+struct DepTrace {
+	std::vector<EntryId> chain;
+	TraceResult result;
+};
+
 
 struct Location {
 	EntryId parent;
@@ -27,6 +49,8 @@ struct LocationHash {
 
 class Solver {
 	const std::vector<Entry> &before, &changed;
+	const size_t entry_size;
+	const fs::path targetDir;
 
 	bool ok = false;
 	std::string errorMsg;
@@ -35,105 +59,102 @@ class Solver {
 
 	std::unordered_map<Location, EntryId, LocationHash> beforeLocation;
 
+	std::vector<FsOperate> fsOperates;
+
 	/*
 		dependencies[a.value].push_back(b);
 		aを実行するにはbの処理を先に行わなければならない
 	*/
-	std::vector<std::vector<EntryId>> dependencies;
+	std::vector<EntryId> dependencies;
+
+	fs::path createEvPath(const EntryId& id) {
+		return getTempRoot(targetDir) / "ev" / std::to_string(id);
+	}
+
 
 	void error(const std::string& str) {
 		errorMsg = str;
 		ok = false;
 	}
 
+	/// @brief 変更のあるEntryを取り出す
+	void diff();
+
 	/// @brief 最終状態の一意性を検証
-	void check_collide() {
-		for (const auto& e: before) {
-			beforeLocation[{e.parent, e.name}] = e.id;
-		}
-
-		std::unordered_map<Location, EntryId, LocationHash> changedLocation;
-
-		for (const auto& e: changed) {
-			auto [it, inserted] = changedLocation.emplace(
-				Location{e.parent, e.name},
-				e.id
-			);
-
-			if (!inserted)
-				return error("Final Path collision.");
-		}
-	}
+	void check_collide();
 
 	/// @brief 現在位置の占有者から依存関係を作る
-	void gen_dep() {
-		for (EntryId id: changedId) {
-			const Entry& e = changed[id.value];
-			const Entry& beforeEntry = before[id.value];
+	void gen_dep();
 
-			Location target{
-				e.parent,
-				e.name
-			};
 
-			auto it = beforeLocation.find(target);
+	DepTrace traceDep(EntryId targetId) {
+		std::vector<bool> processed(entry_size);
+		DepTrace result;
+		EntryId curId = targetId;
 
-			if (it == beforeLocation.end())
-				continue;
+		while (curId.isValid()) {
+			if (processed[curId]) {
+				result.result = TraceResult::processed;
+				break;
+			}
 
-			EntryId owner = it->second;
+			const EntryId& dependOn = dependencies[curId];
 
-			// 自分自身なら依存不要
-			if (owner == id)
-				continue;
+			if (!dependOn.isValid()) {
+				result.result = TraceResult::complete;
+				break;
+			}
 
-			// ownerが移動した後でentryを移動する必要がある
-			dependencies[id.value].push_back(owner);
+			if (std::ranges::contains(result.chain, dependOn)) {
+				result.result = TraceResult::loop;
+				break;
+			}
+
+			result.chain.push_back(curId);
+			curId = dependOn;
 		}
+
+		return result;
 	}
 
-	/// @brief 変更のあるEntryを取り出す
-	void diff() {
-		for (size_t i = 0; i < before.size(); i++) {
-			const Entry& a = before[i];
-			const Entry& b = changed[i];
+	/// @brief fs命令を完成させる
+	void solveDep() {
+		std::vector<bool> processed(entry_size);
 
-			if (a.isDir ^ b.isDir) return error(
-				"Changing a directory to a file, or vice versa, is not supported."
-			);
+		for (const EntryId& targetId: changedId) {
+			DepTrace trace = traceDep(targetId);
 
-			if (
-				(a.parent != b.parent) ||
-				(a.name != b.name)
-			) changedId.push_back(a.id);
+			switch (trace.result) {
+			case TraceResult::complete:
+				solveChain(trace.chain);
+				break;
 
+			case TraceResult::loop:
+				solveLoop(trace.chain);
+				break;
+
+			case TraceResult::processed:
+				solveChain(trace.chain);
+				break;
+			}
 		}
 	}
-
 
 public:
-	Solver(const std::vector<Entry>& before, const std::vector<Entry>& changed):
-		before(before), changed(changed) {}
+	Solver(const std::vector<Entry>& before, const std::vector<Entry>& changed, const fs::path targetDir):
+		before(before), changed(changed), entry_size(before.size()), targetDir(targetDir) {}
 
 	void debug() {
 		for (auto e: changedId) printf("%llu, ", e.value);
 		printf("\n");
 	}
 
-	void solve() {
+	std::vector<FsOperate>& solve() {
 		diff();
-		if (!ok)
-			return;
-
 		check_collide();
-		if (!ok)
-			return;
-
 		gen_dep();
-		if (!ok)
-			return;
-
-		// TODO: dependency graphから実行順序を決める
+		solveDep();
+		return fsOperates;
 	}
 
 };

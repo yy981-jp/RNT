@@ -1,6 +1,6 @@
 #include <core/dir.h>
 #include <core/texter.h>
-#include <core/launcher.h>
+// #include <core/launcher.h>
 #include <core/config.h>
 #include <core/solver.h>
 
@@ -25,6 +25,9 @@ int main(int argc, char *argv[]) {
 	else target = fs::path(argv[1]);
 
 
+	RNT_Dir rd(target);
+
+
 	Ents ent;
 	{
 
@@ -42,7 +45,13 @@ int main(int argc, char *argv[]) {
 
 	}
 
-	Solver solver(ent.orig, ent.changed);
-	solver.diff();
-	solver.debug();
+	std::vector<FsOperate> fsOp;
+	{
+		Solver solver(ent.orig, ent.changed, target);
+		fsOp = std::move(solver.solve());
+	}
+	
+	for (const auto& e: fsOp) {
+		printf("%s   ->   %s\n", e.from.string().c_str(), e.to.string().c_str());
+	}
 }

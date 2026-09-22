@@ -18,6 +18,7 @@ struct EntryId {
 		value++;
 		return b;
 	}
+	operator size_t() const { return value; }
 };
 
 struct Entry {

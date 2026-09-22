@@ -1,6 +1,7 @@
 #include <core/texter.h>
 #include <core/launcher.h>
 #include <util/json.h>
+#include <util/fs.h>
 
 #include <algorithm>
 #include <stdexcept>
@@ -103,7 +104,7 @@ std::string Texter::getText() {
 std::vector<Entry>& Texter::edit(Config& config, const fs::path& target) {
 	std::string text = getText();
 
-	fs::path tempF = fs::temp_directory_path() / std::format("RNT-{}.txt", std::hash<fs::path>{}(target));
+	fs::path tempF = getTempRoot(target) / "files.txt";
 	{
 		std::ofstream ofs(tempF);
 		if (!ofs) throw std::runtime_error("RNT couldn't open temp file. (ofs)");

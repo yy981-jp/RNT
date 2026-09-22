@@ -10,7 +10,7 @@ struct Ctx {
 	std::vector<Entry> entries;
 	std::stack<EntryId> parents;
 	int depth = 0;
-	EntryId cid{};
+	EntryId cid{0};
 };
 
 inline void dir(Ctx& ctx, const fs::path& targetDir) {
