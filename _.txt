@@ -5,12 +5,15 @@
 ファイル名とIDの間は固定長 parserは空白の数を考慮しない
 
 
-	if (line_pos != entries.size()) return error(
-		std::format(
-			"The number of entries does not match the number before the change."
-			" (%d -> %d)", entries.size(), line_pos)
-	);
-のような安全装置をsolverClassに持たせる
+a -> b
+b -> c
+c -> a
+は
+c -> tmp
+b -> c
+a -> b
+tmp -> c
+のように処理する
 
 
 c:\cpp\RNT\build>rnt

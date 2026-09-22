@@ -6,27 +6,16 @@
 #include <algorithm>
 
 
-// TODO:
-namespace {
-	void solveChain(const std::vector<EntryId>& id) {}
-	void solveLoop(const std::vector<EntryId>& id) {}
-}
-
-
 struct FsOperate {
 	fs::path from, to;
 };
 
 
-enum class TraceResult {
-	complete,
-	loop,
-	processed,
-};
-
 struct DepTrace {
+	// 実行順に並んだEntry
 	std::vector<EntryId> chain;
-	TraceResult result;
+
+	bool looped = false;
 };
 
 
@@ -93,20 +82,14 @@ class Solver {
 		EntryId curId = targetId;
 
 		while (curId.isValid()) {
-			if (processed[curId]) {
-				result.result = TraceResult::processed;
-				break;
-			}
+			if (processed[curId]) break;
 
 			const EntryId& dependOn = dependencies[curId];
 
-			if (!dependOn.isValid()) {
-				result.result = TraceResult::complete;
-				break;
-			}
+			if (!dependOn.isValid()) break;
 
 			if (std::ranges::contains(result.chain, dependOn)) {
-				result.result = TraceResult::loop;
+				result.looped = true;
 				break;
 			}
 
@@ -120,25 +103,51 @@ class Solver {
 	/// @brief fs命令を完成させる
 	void solveDep() {
 		std::vector<bool> processed(entry_size);
+		// 高速化のため
+		fsOperates.reserve(entry_size);
 
 		for (const EntryId& targetId: changedId) {
 			DepTrace trace = traceDep(targetId);
 
-			switch (trace.result) {
-			case TraceResult::complete:
-				solveChain(trace.chain);
-				break;
+			if (trace.looped) solveLoop(trace.chain);
+			else solveChain(trace.chain);
 
-			case TraceResult::loop:
-				solveLoop(trace.chain);
-				break;
-
-			case TraceResult::processed:
-				solveChain(trace.chain);
-				break;
-			}
 		}
 	}
+
+
+	void solveChain(const std::vector<EntryId>& chain) {
+		for (auto& e: chain) {
+			fsOperates.emplace_back(FsOperate{
+				.from = solvePath(before,e),
+				.to = solvePath(changed,e)
+			});
+		}
+	}
+
+	void solveLoop(const std::vector<EntryId>& chain) {
+		const EntryId& edge = chain.front();
+		fs::path tmp = createEvPath(edge); // 一時退避先
+
+		fsOperates.emplace_back(FsOperate{
+			.from = solvePath(before, edge),
+			.to = tmp,
+		});
+
+		// 2つ目から通常chainと同じように処理
+		for (auto it = chain.begin()+1; it != chain.end(); ++it) {
+			fsOperates.emplace_back(FsOperate{
+				.from = solvePath(before,*it),
+				.to = solvePath(changed,*it),
+			});
+		}
+
+		fsOperates.emplace_back(FsOperate{
+			.from = tmp,
+			.to = solvePath(changed,edge)
+		});
+	}
+
 
 public:
 	Solver(const std::vector<Entry>& before, const std::vector<Entry>& changed, const fs::path targetDir):
