@@ -6,7 +6,7 @@ void Solver::diff() {
 		const Entry& a = before[i];
 		const Entry& b = changed[i];
 
-		if (a.isDir ^ b.isDir) return error(
+		if (a.isDir ^ b.isDir) throw std::runtime_error(
 			"Changing a directory to a file, or vice versa, is not supported."
 		);
 
@@ -32,7 +32,7 @@ void Solver::check_collide() {
 		);
 
 		if (!inserted)
-			return error("Final Path collision.");
+			throw std::runtime_error("Final Path collision.");
 	}
 }
 
@@ -40,8 +40,8 @@ void Solver::check_collide() {
 void Solver::gen_dep() {
 	dependencies.assign(entry_size,EntryId::INVALID());
 	for (EntryId id: changedId) {
-		const Entry& e = changed[id.value];
-		const Entry& beforeEntry = before[id.value];
+		const Entry& e = changed[id];
+		const Entry& beforeEntry = before[id];
 
 		Location target{
 			e.parent,
@@ -60,6 +60,6 @@ void Solver::gen_dep() {
 			continue;
 
 		// ownerが移動した後でentryを移動する必要がある
-		dependencies[id.value] = owner;
+		dependencies[id] = owner;
 	}
 }

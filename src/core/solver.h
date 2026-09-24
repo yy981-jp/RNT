@@ -32,7 +32,7 @@ struct Location {
 
 struct LocationHash {
 	size_t operator()(const Location& loc) const {
-		size_t h1 = std::hash<uint64_t>{}(loc.parent.value);
+		size_t h1 = std::hash<uint64_t>{}(loc.parent);
 		size_t h2 = std::hash<std::string>{}(loc.name);
 
 		return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
@@ -55,7 +55,7 @@ class Solver {
 	std::vector<FsOperate> fsOperates;
 
 	/*
-		dependencies[a.value].push_back(b);
+		dependencies[a].push_back(b);
 		aを実行するにはbの処理を先に行わなければならない
 	*/
 	std::vector<EntryId> dependencies;
@@ -64,11 +64,6 @@ class Solver {
 		return getTempRoot(targetDir) / "ev" / std::to_string(id);
 	}
 
-
-	void error(const std::string& str) {
-		errorMsg = str;
-		ok = false;
-	}
 
 	/// @brief 変更のあるEntryを取り出す
 	void diff();
@@ -80,8 +75,7 @@ class Solver {
 	void gen_dep();
 
 
-	DepTrace traceDep(EntryId targetId) {
-		std::vector<bool> processed(entry_size);
+	DepTrace traceDep(EntryId targetId, std::vector<bool>& processed) {
 		DepTrace result;
 		EntryId curId = targetId;
 
@@ -115,12 +109,12 @@ class Solver {
 
 	/// @brief fs命令を完成させる
 	void solveDep() {
-		std::vector<bool> processed(entry_size);
+		std::vector<bool> processed(entry_size, false);
 		// 高速化のため
 		fsOperates.reserve(entry_size);
 
 		for (const EntryId& targetId: changedId) {
-			DepTrace trace = traceDep(targetId);
+			DepTrace trace = traceDep(targetId, processed);
 
 			if (trace.looped()) solveLoop(trace);
 			else solveChain(trace.chain);
@@ -181,15 +175,20 @@ public:
 		before(before), changed(changed), entry_size(before.size()), targetDir(targetDir) {}
 
 	void debug() {
-		for (auto e: changedId) printf("%llu, ", e.value);
+		for (auto e: changedId) printf("%llu, ", e);
 		printf("\n");
 	}
 
 	std::vector<FsOperate>& solve() {
-		diff();
-		check_collide();
-		gen_dep();
-		solveDep();
+		try {
+			diff();
+			check_collide();
+			gen_dep();
+			solveDep();
+		} catch (const std::runtime_error& e) {
+			throw std::runtime_error(std::string{"Error: Solver: "} + e.what());
+		}
+		
 		return fsOperates;
 	}
 

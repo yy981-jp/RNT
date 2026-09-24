@@ -6,12 +6,13 @@ inline fs::path getTempRoot(const fs::path targetDir) {
 }
 
 struct RNT_Dir {
-	const fs::path targetDir;
+	fs::path tempDir;
 
-	RNT_Dir(const fs::path targetDir): targetDir(targetDir) {
-		fs::create_directories( getTempRoot(targetDir) / "ev" );
+	RNT_Dir(const fs::path targetDir) {
+		tempDir = getTempRoot(targetDir);
+		fs::create_directories( tempDir / "ev" );
 	}
 	~RNT_Dir() {
-		fs::remove_all(targetDir);
+		fs::remove_all(tempDir);
 	}
 };

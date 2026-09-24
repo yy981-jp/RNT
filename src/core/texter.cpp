@@ -72,11 +72,11 @@ std::string Texter::getText() {
 	// あらかじめ大きなメモリ領域を一括で確保しておく
 	result.reserve(entries.size() * 64);
 
-	idIndentWidth = BaseNum::encode(entries.back().id.value).size() / TABSIZE;
+	idIndentWidth = BaseNum::encode(entries.back().id).size() / TABSIZE;
 
 	for (const auto& e: entries) {
 		// id
-		std::string id = BaseNum::encode(e.id.value);
+		std::string id = BaseNum::encode(e.id);
 		size_t idSize = id.size();
 		result.append(id);
 
@@ -153,8 +153,9 @@ void Texter::solve(std::string_view str) {
 		// EntryId
 		size_t id_end = line.find('\t');
 		if (id_end == std::string_view::npos) return error("The end of EntryId could not be found.");
-		EntryId id;
-		id.value = BaseNum::decode(line.substr(0, id_end));
+		EntryId id{
+			BaseNum::decode(line.substr(0, id_end))
+		};
 
 		// name
 		size_t name_begin = line.find('"');
@@ -172,7 +173,7 @@ void Texter::solve(std::string_view str) {
 		int id_tab = idIndentWidth - static_cast<int>(id_end / TABSIZE) + MARGIN;
 		int depth = static_cast<int>(name_begin - id_end - id_tab);
 
-		// printf("%llu: %d\n", id.value, depth);
+		// printf("%llu: %d\n", id, depth);
 
 		/*
 			現在のdepth以上の親は、
@@ -191,7 +192,7 @@ void Texter::solve(std::string_view str) {
 		while (!parents.empty()) {
 			EntryId parent_id = parents.top();
 
-			if (changedEntries[parent_id.value].depth < depth) break;
+			if (changedEntries[parent_id].depth < depth) break;
 
 			parents.pop();
 		}
@@ -208,11 +209,14 @@ void Texter::solve(std::string_view str) {
 			.depth = depth
 		};
 
-		auto& ent = changedEntries[id.value];
+		auto& ent = changedEntries[id];
 		ent = std::move(ent_data);
 
 		// dir判定
-		if (line[name_end] == '/') {
+		if (
+			name_end + 1 < line.size() &&
+			line[name_end + 1] == '/'
+		) {
 			ent.isDir = true;
 			parents.push(ent.id);
 		}
