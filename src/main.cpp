@@ -1,29 +1,57 @@
-#include <filesystem>
-#include <string>
-#include <vector>
-#include <stack>
-#include <cstdint>
-
-namespace fs = std::filesystem;
-
-// disable_recursion_pending
+#include <core/dir.h>
+#include <core/texter.h>
+// #include <core/launcher.h>
+#include <core/config.h>
+#include <core/solver.h>
 
 
-using EntryId = uint64_t;
-
-struct Entry {
-	EntryId id;
-	std::string name;
+struct SDLApp {
+	SDLApp() { SDL_Init(0); }
+	~SDLApp() { SDL_Quit(); }
 };
 
 
-int main() {
-	fs::path cd = fs::current_path();
+struct Ents {
+	std::vector<Entry> orig, changed;
+};
 
-	std::vector<Entry> entries;
-	std::stack<EntryId> parents;
-	int lastNest = 0;
-	for (const auto& e: fs::recursive_directory_iterator(cd)) {
+int main(int argc, char *argv[]) {
+	SDLApp sdlapp;
 
+	Config config((getDataPath() / "config.json").string());
+
+	fs::path target;
+	if (argc < 2) target = fs::current_path();
+	else target = fs::path(argv[1]);
+
+
+	RNT_Dir rd(target);
+
+
+	Ents ent;
+	{
+
+		Ctx ctx{};
+		dir(ctx, target);
+
+		ent.orig = std::move( ctx.entries );
+
+		Texter texter(ent.orig);
+
+		// ユーザーに操作させる
+		ent.changed = std::move( texter.edit(config,target) );
+		const std::string& stat = texter.status();
+		if (!stat.empty()) throw std::runtime_error("Error: Texter: " + stat);
+
+	}
+
+	std::vector<FsOperate> fsOp;
+	{
+		Solver solver(ent.orig, ent.changed, target);
+		fsOp = std::move(solver.solve());
+	}
+	
+	for (const auto& e: fsOp) {
+		printf("%s   ->   %s\n", e.from.string().c_str(), e.to.string().c_str());
 	}
 }
