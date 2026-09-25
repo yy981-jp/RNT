@@ -136,20 +136,41 @@ The editor configuration contains:
 - C++23 compiler
 - CMake 3.30 or newer
 - Ninja or another supported CMake generator
-- SDL3
-- [nlohmann/json](https://github.com/nlohmann/json)
+- Git
 
-The project currently expects SDL3 to be available as a CMake package:
+RNT uses SDL3 as a CMake package. The SDL3 source is included as a Git submodule under `external/SDL`, but the top-level `CMakeLists.txt` does not build it automatically.
 
-```cmake
-find_package(SDL3 CONFIG REQUIRED)
+Because of this, **SDL3 must be configured and installed into `external/install/` before configuring RNT itself.**
+
+### 1. Initialize the SDL3 submodule
+
+If you cloned the repository without submodules, run:
+
+```text
+git submodule update --init --recursive
 ```
 
-The repository also contains an SDL3 submodule under `external/SDL`, although the current top-level `CMakeLists.txt` expects an installed/configured SDL3 package rather than building that submodule directly.
+### 2. Build and install SDL3
 
-### Configure and build
+For a Release build:
 
-A typical CMake/Ninja build looks like this:
+```text
+cmake -S external/SDL -B external/build/release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=external/install/release
+cmake --build external/build/release --target install
+```
+
+For a Debug build:
+
+```text
+cmake -S external/SDL -B external/build/debug -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=external/install/debug
+cmake --build external/build/debug --target install
+```
+
+The main project selects the corresponding install directory automatically based on `CMAKE_BUILD_TYPE`.
+
+### 3. Configure and build RNT
+
+After SDL3 has been installed, configure the main project:
 
 ```text
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -160,6 +181,18 @@ The resulting executable is:
 
 ```text
 build/rnt.exe
+```
+
+### One-time build summary
+
+A clean Release build therefore consists of:
+
+```text
+git submodule update --init --recursive
+cmake -S external/SDL -B external/build/release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=external/install/release
+cmake --build external/build/release --target install
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 ```
 
 ## Project structure
