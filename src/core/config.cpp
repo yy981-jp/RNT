@@ -6,7 +6,7 @@
 void Config::init() {
 	// editor
 	{
-		std::cout << "[If you want to use an editor that is not on the list, please add it to system.json.]\n";
+		std::cout << "[If you want to use an editor that is not on the list, please add it to rnt.cfg.json.]\n";
 		
 		int i = 1;
 		const auto& editors = baseConfig.at("editor");
