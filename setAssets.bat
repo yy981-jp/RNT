@@ -1,2 +1,2 @@
 @echo off
-copy system.json build\ > nul
+copy rnt.cfg.json build\ > nul

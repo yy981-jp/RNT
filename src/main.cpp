@@ -1,8 +1,10 @@
 #include <core/dir.h>
 #include <core/texter.h>
-// #include <core/launcher.h>
 #include <core/config.h>
 #include <core/solver.h>
+#include <core/fs.h>
+
+#include <iostream>
 
 
 struct SDLApp {
@@ -23,35 +25,55 @@ int main(int argc, char *argv[]) {
 	fs::path target;
 	if (argc < 2) target = fs::current_path();
 	else target = fs::path(argv[1]);
+	fs::current_path(target);
 
 
 	RNT_Dir rd(target);
 
 
-	Ents ent;
-	{
+	for (int loop = 0; loop < 50; loop++) {
 
-		Ctx ctx{};
-		dir(ctx, target);
+		try {
+		
+			Ents ent;
+			{
 
-		ent.orig = std::move( ctx.entries );
+				Ctx ctx{};
+				dir(ctx, target);
 
-		Texter texter(ent.orig);
+				ent.orig = std::move( ctx.entries );
 
-		// ユーザーに操作させる
-		ent.changed = std::move( texter.edit(config,target) );
-		const std::string& stat = texter.status();
-		if (!stat.empty()) throw std::runtime_error("Error: Texter: " + stat);
+				Texter texter(ent.orig);
+
+				// ユーザーに操作させる
+				ent.changed = std::move( texter.edit(config,target) );
+				const std::string& stat = texter.status();
+				if (!stat.empty()) throw std::runtime_error("Error: Texter: " + stat);
+
+			}
+
+			std::vector<FsOperate> fsOp;
+			{
+				Solver solver(ent.orig, ent.changed, target);
+				fsOp = std::move(solver.solve());
+			}
+			
+			for (const auto& e: fsOp) {
+				printf("%s   ->   %s\n", e.from.string().c_str(), e.to.string().c_str());
+		
+				fs::rename(e.from,e.to);
+			}
+
+			break;
+
+		} catch (const std::runtime_error& e) {
+			// error
+			std::cerr << e.what() << "\n";
+			std::cout << "Press Enter to continue";
+			std::cin.get();
+		}
+
 
 	}
 
-	std::vector<FsOperate> fsOp;
-	{
-		Solver solver(ent.orig, ent.changed, target);
-		fsOp = std::move(solver.solve());
-	}
-	
-	for (const auto& e: fsOp) {
-		printf("%s   ->   %s\n", e.from.string().c_str(), e.to.string().c_str());
-	}
 }

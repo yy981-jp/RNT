@@ -29,7 +29,7 @@ class Texter {
 	size_t line_pos = 0;
 
 	void error(const std::string& str) {
-		errorMsg = std::format("Line %d:  %s", line_pos+1, str.c_str());
+		errorMsg = std::format("Line {}:  {}", line_pos+1, str);
 		ok = false;
 	}
 

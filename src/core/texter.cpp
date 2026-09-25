@@ -227,6 +227,6 @@ void Texter::solve(std::string_view str) {
 	if (line_pos != entries.size()) return error(
 		std::format(
 			"The number of entries does not match the number before the change."
-			" (%d -> %d)", entries.size(), line_pos)
+			" ({} -> {})", entries.size(), line_pos)
 	);
 }
