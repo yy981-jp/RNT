@@ -2,7 +2,7 @@
 #include <core/texter.h>
 #include <core/config.h>
 #include <core/solver.h>
-#include <core/fs.h>
+#include <util/ui.h>
 
 #include <iostream>
 
@@ -31,22 +31,32 @@ int main(int argc, char *argv[]) {
 	RNT_Dir rd(target);
 
 
+	std::vector<Entry> entOrig;
+	std::vector<Entry> entChanged;
+
+	{
+		Ctx ctx{};
+		dir(ctx, target);
+
+		entOrig = std::move( ctx.entries );
+	}
+	if (entOrig.empty()) {
+		std::cerr << "There are no work items.";
+		return 0;
+	}
+
+	Texter texter(entOrig);
+
 	for (int loop = 0; loop < 50; loop++) {
 
 		try {
 		
-			Ents ent;
+			// Ents ent;
 			{
 
-				Ctx ctx{};
-				dir(ctx, target);
-
-				ent.orig = std::move( ctx.entries );
-
-				Texter texter(ent.orig);
-
 				// ユーザーに操作させる
-				ent.changed = std::move( texter.edit(config,target) );
+				entChanged.clear();
+				entChanged.swap( texter.edit(config,target) );
 				const std::string& stat = texter.status();
 				if (!stat.empty()) throw std::runtime_error("Error: Texter: " + stat);
 
@@ -54,25 +64,37 @@ int main(int argc, char *argv[]) {
 
 			std::vector<FsOperate> fsOp;
 			{
-				Solver solver(ent.orig, ent.changed, target);
+				Solver solver(entOrig, entChanged, target);
+				if (solver.isChanged()) {
+					std::cout << "There are no changes.\n";
+					return 0;
+				}
 				fsOp = std::move(solver.solve());
 			}
 			
 			for (const auto& e: fsOp) {
 				printf("%s   ->   %s\n", e.from.string().c_str(), e.to.string().c_str());
-		
+			}
+
+			if ( !choice("Do you want to confirm this change?") ) {
+				std::cout << "The operation was interrupted.\n";
+				return 0;
+			}
+
+			for (const auto& e: fsOp) {
 				fs::rename(e.from,e.to);
 			}
+
+			std::cout << "Done.\n";
 
 			break;
 
 		} catch (const std::runtime_error& e) {
 			// error
 			std::cerr << e.what() << "\n";
-			std::cout << "Press Enter to continue";
+			std::cout << "Press Enter to continue.";
 			std::cin.get();
 		}
-
 
 	}
 

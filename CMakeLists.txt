@@ -44,3 +44,9 @@ find_package(SDL3 CONFIG REQUIRED)
 target_link_libraries(${EXE_NAME}
 	PRIVATE SDL3::SDL3
 )
+
+# mode
+target_compile_options(${EXE_NAME} PRIVATE
+	$<$<CONFIG:Release>:-O3>
+	$<$<CONFIG:RelWithDebInfo>:-O3 -g>
+)

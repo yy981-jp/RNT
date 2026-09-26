@@ -1,4 +1,5 @@
 #include <core/config.h>
+#include <util/ui.h>
 
 #include <iostream>
 
@@ -26,19 +27,7 @@ void Config::init() {
 
 	// arg 
 	{
-		std::cout << "Do you want to use CLI arguments? [Y,N]: ";
-		char choice;
-		std::cin >> choice;
-
-		bool useCliArg = true;
-		switch (choice) {
-			case 'Y': case 'y': useCliArg = true; break;
-			case 'N': case 'n': useCliArg = false; break;
-			
-			default: throw std::runtime_error("Please answer with Y(es) or N(o).");
-		}
-
-		config["useCliArg"] = useCliArg;
+		config["useCliArg"] = choice("Do you want to use CLI arguments?");
 		
 		std::cout << "\n";
 	}

@@ -102,14 +102,20 @@ std::string Texter::getText() {
 
 
 std::vector<Entry>& Texter::edit(Config& config, const fs::path& target) {
-	std::string text = getText();
-
+	std::string text;
 	fs::path tempF = getTempRoot(target) / "files.txt";
-	{
-		std::ofstream ofs(tempF);
-		if (!ofs) throw std::runtime_error("RNT couldn't open temp file. (ofs)");
-		ofs << text;
-		ofs.flush();
+
+	if (!edited) {
+		text = std::move(getText());
+
+		{
+			std::ofstream ofs(tempF);
+			if (!ofs) throw std::runtime_error("RNT couldn't open temp file. (ofs)");
+			ofs << text;
+			ofs.flush();
+		}
+
+		edited = true;
 	}
 
 	json te = config.getSys()["editor"][config.get().at("editor").get<int>()];
