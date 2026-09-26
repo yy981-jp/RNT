@@ -1,3 +1,6 @@
 [submodule "external/SDL"]
 	path = external/SDL
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "external/y9inc"]
+	path = external/y9inc
+	url = https://github.com/yy981-jp/tools.git

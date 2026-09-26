@@ -16,6 +16,16 @@ inline fs::path getDataPath() {
 	return result;
 }
 
+inline fs::path getArg0Path() {
+	const char* path = SDL_GetBasePath();
+	if (!path)
+		throw std::runtime_error(SDL_GetError());
+
+	fs::path result = path;
+	// SDL_free(path);
+	return result;
+}
+
 
 class Config {
 	json config;
@@ -26,7 +36,7 @@ class Config {
 
 public:
 	Config(const std::string& path): configPath(path) {
-		baseConfig = readJson("rnt.cfg.json");
+		baseConfig = readJson( (getArg0Path() / "rnt.cfg.json").string() );
 		if (!fs::exists(path) || fs::is_empty(path)) init();
 		config = readJson(path);
 		if (config.empty()) init();

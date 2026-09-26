@@ -28,17 +28,20 @@ class Texter {
 	std::string errorMsg;
 	size_t line_pos = 0;
 
+	// エラーでユーザに操作させなおすとき、以前の編集を上書きしないようにするフラグ
+	bool edited = false;
+
 	void error(const std::string& str) {
 		errorMsg = std::format("Line {}:  {}", line_pos+1, str);
 		ok = false;
 	}
 
 	void solve(std::string_view str);
+	std::string getText();
 
 public:
 	Texter(const std::vector<Entry>& entries): entries(entries) {}
 
-	std::string getText();
 	std::vector<Entry>& edit(Config& config, const fs::path& target);
 
 	std::string status() {

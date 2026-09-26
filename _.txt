@@ -15,6 +15,8 @@ a -> b
 tmp -> c
 のように処理する
 
+変更を取り消せるようにlogみたいなものを残す仕組みも作りたい
+
 
 c:\cpp\RNT\build>rnt
 \		".ninja_deps"
