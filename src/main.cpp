@@ -47,7 +47,6 @@ int main(int argc, char *argv[]) {
 
 	Texter texter(entOrig);
 
-	
 	for (int loop = 0; loop < 50; loop++) {
 
 		try {
@@ -66,6 +65,10 @@ int main(int argc, char *argv[]) {
 			std::vector<FsOperate> fsOp;
 			{
 				Solver solver(entOrig, entChanged, target);
+				if (solver.isChanged()) {
+					std::cout << "There are no changes.\n";
+					return 0;
+				}
 				fsOp = std::move(solver.solve());
 			}
 			
@@ -92,7 +95,6 @@ int main(int argc, char *argv[]) {
 			std::cout << "Press Enter to continue.";
 			std::cin.get();
 		}
-
 
 	}
 

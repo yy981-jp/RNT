@@ -76,7 +76,12 @@ class Solver {
 
 public:
 	Solver(const std::vector<Entry>& before, const std::vector<Entry>& changed, const fs::path targetDir):
-		before(before), changed(changed), entry_size(before.size()), targetDir(targetDir) {}
+		before(before), changed(changed), entry_size(before.size()), targetDir(targetDir) {
+			diff();
+		}
 
+	bool isChanged() {
+		return changedId.empty();
+	}
 	std::vector<FsOperate>& solve();
 };

@@ -160,7 +160,6 @@ void Solver::solveLoop(const DepTrace& trace) {
 
 std::vector<FsOperate>& Solver::solve() {
 	try {
-		diff();
 		check_collide();
 		gen_dep();
 		solveDep();
