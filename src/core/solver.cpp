@@ -33,8 +33,8 @@ void Solver::check_collide() {
 			e.id
 		);
 
-		if (!inserted)
-			throw std::runtime_error("Final Path collision.");
+		if (!inserted && !e.isDir)
+			throw std::runtime_error("Final Path collision: " + e.name);
 	}
 }
 
