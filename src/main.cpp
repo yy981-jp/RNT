@@ -4,6 +4,7 @@
 #include <core/texter.h>
 #include <core/config.h>
 #include <core/solver.h>
+#include <core/fs.h>
 #include <util/ui.h>
 
 #include <iostream>
@@ -58,7 +59,7 @@ int main(int argc, char *argv[]) {
 	for (int loop = 0; loop < 50; loop++) {
 
 		try {
-		
+
 			// Ents ent;
 			{
 
@@ -79,9 +80,11 @@ int main(int argc, char *argv[]) {
 				}
 				fsOp = std::move(solver.solve());
 			}
-			
+
+			FsExecutor preview(entOrig);
 			for (const auto& e: fsOp) {
-				printf("%s   ->   %s\n", e.from.string().c_str(), e.to.string().c_str());
+				const auto [from, to] = preview.preview(e);
+				printf("%s   ->   %s\n", from.string().c_str(), to.string().c_str());
 			}
 
 			if ( !choice("Do you want to confirm this change?") ) {
@@ -89,8 +92,9 @@ int main(int argc, char *argv[]) {
 				return 0;
 			}
 
+			FsExecutor executor(entOrig);
 			for (const auto& e: fsOp) {
-				fs::rename(e.from,e.to);
+				executor.apply(e);
 			}
 
 			std::cout << "Done.\n";

@@ -113,10 +113,11 @@ DepTrace Solver::traceDep(EntryId targetId, std::vector<bool>& processed) {
 }
 
 void Solver::solveChain(const std::vector<EntryId>& chain) {
-	for (auto& e: chain) {
+	for (const auto& e: chain) {
 		fsOperates.emplace_back(FsOperate{
-			.from = solvePath(before,e),
-			.to = solvePath(changed,e)
+			.id = e,
+			.parent = changed[e].parent,
+			.name = changed[e].name
 		});
 	}
 }
@@ -126,25 +127,27 @@ void Solver::solveLoop(const DepTrace& trace) {
 	const size_t loopSize = trace.loopSize;
 
 	const EntryId& edge = chain.front();
-	fs::path tmp = createEvPath(edge);
+	const fs::path tmp = createEvPath(edge);
 
 	fsOperates.emplace_back(FsOperate{
-		.from = solvePath(before, edge),
-		.to = tmp,
+		.id = edge,
+		.targetPath = tmp
 	});
 
 	for (size_t i = 1; i < loopSize; ++i) {
 		const EntryId& e = chain[i];
 
 		fsOperates.emplace_back(FsOperate{
-			.from = solvePath(before, e),
-			.to = solvePath(changed, e),
+			.id = e,
+			.parent = changed[e].parent,
+			.name = changed[e].name
 		});
 	}
 
 	fsOperates.emplace_back(FsOperate{
-		.from = tmp,
-		.to = solvePath(changed, edge)
+		.id = edge,
+		.parent = changed[edge].parent,
+		.name = changed[edge].name
 	});
 
 	// loopの外側
@@ -152,8 +155,9 @@ void Solver::solveLoop(const DepTrace& trace) {
 		const EntryId& e = chain[i];
 
 		fsOperates.emplace_back(FsOperate{
-			.from = solvePath(before, e),
-			.to = solvePath(changed, e),
+			.id = e,
+			.parent = changed[e].parent,
+			.name = changed[e].name
 		});
 	}
 }
@@ -166,6 +170,6 @@ std::vector<FsOperate>& Solver::solve() {
 	} catch (const std::runtime_error& e) {
 		throw std::runtime_error(std::string{"Error: Solver: "} + e.what());
 	}
-	
+
 	return fsOperates;
 }

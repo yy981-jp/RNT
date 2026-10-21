@@ -1,5 +1,5 @@
 #pragma once
-#include <def/entry.h>
+#include <core/fs.h>
 #include <util/fs.h>
 
 #include <unordered_map>
@@ -75,7 +75,7 @@ class Solver {
 	void solveLoop(const DepTrace& trace);
 
 public:
-	Solver(const std::vector<Entry>& before, const std::vector<Entry>& changed, const fs::path targetDir):
+	Solver(const std::vector<Entry>& before, const std::vector<Entry>& changed, const fs::path& targetDir):
 		before(before), changed(changed), entry_size(before.size()), targetDir(targetDir) {
 			diff();
 		}
