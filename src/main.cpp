@@ -1,3 +1,5 @@
+#include <CLI/CLI.hpp>
+
 #include <core/dir.h>
 #include <core/texter.h>
 #include <core/config.h>
@@ -19,12 +21,16 @@ struct Ents {
 
 int main(int argc, char *argv[]) {
 	SDLApp sdlapp;
-
 	Config config((getDataPath() / "config.json").string());
+	CLI::App app{"RNT : Copyright (c) 2026 yy981"};
 
+	int maxDepth = -1;
 	fs::path target;
-	if (argc < 2) target = fs::current_path();
-	else target = fs::path(argv[1]);
+	app.add_option("TargetDirectory", target, "Target Directory.")->default_val(fs::current_path().string());
+	app.add_option("--depth", maxDepth, "Set max depth. -1 means unlimited.")->default_val(-1);
+
+	CLI11_PARSE(app, argc, argv);
+
 	fs::current_path(target);
 
 
@@ -36,6 +42,8 @@ int main(int argc, char *argv[]) {
 
 	{
 		Ctx ctx{};
+		ctx.maxDepth = maxDepth;
+		ctx.limitedDepth = ctx.maxDepth >= 0;
 		dir(ctx, target);
 
 		entOrig = std::move( ctx.entries );

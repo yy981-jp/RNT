@@ -16,7 +16,8 @@ void dir(Ctx& ctx, const fs::path& targetDir) {
 
 			ctx.parents.push(ent.id);
 			ctx.depth++;
-			dir(ctx, e.path());
+			if (!(ctx.limitedDepth && ctx.depth > ctx.maxDepth))
+				dir(ctx, e.path());
 			ctx.parents.pop();
 			ctx.depth--;
 		}
