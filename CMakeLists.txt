@@ -11,7 +11,7 @@ project(
 set(CMAKE_CXX_STANDARD 23)
 add_compile_options(-fdiagnostics-color=always)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY \${CMAKE_SOURCE_DIR}/build)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build)
 
 
 # add_subdirectory(external)
@@ -21,33 +21,33 @@ set(EXE_NAME "rnt")
 
 file(GLOB_RECURSE SOURCES src/*.cpp)
 
-add_executable(\${EXE_NAME} \${SOURCES})
+add_executable(${EXE_NAME} ${SOURCES})
 
-target_include_directories(\${EXE_NAME} PRIVATE
-	\${CMAKE_SOURCE_DIR}/src
-	\${CMAKE_SOURCE_DIR}/external/
-	\${CMAKE_SOURCE_DIR}/external/CLI11/include
+target_include_directories(${EXE_NAME} PRIVATE
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/external/
+	${CMAKE_SOURCE_DIR}/external/CLI11/include
 )
 
 # External install prefix
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	list(PREPEND CMAKE_PREFIX_PATH
-		\${CMAKE_SOURCE_DIR}/external/install/debug
+		${CMAKE_SOURCE_DIR}/external/install/debug
 	)
 else()
 	list(PREPEND CMAKE_PREFIX_PATH
-		\${CMAKE_SOURCE_DIR}/external/install/release
+		${CMAKE_SOURCE_DIR}/external/install/release
 	)
 endif()
 
 find_package(SDL3 CONFIG REQUIRED)
 
-target_link_libraries(\${EXE_NAME}
+target_link_libraries(${EXE_NAME}
 	PRIVATE SDL3::SDL3
 )
 
 # mode
-target_compile_options(\${EXE_NAME} PRIVATE
+target_compile_options(${EXE_NAME} PRIVATE
 	$<$<CONFIG:Release>:-O3>
 	$<$<CONFIG:RelWithDebInfo>:-O3 -g>
 )
@@ -61,7 +61,7 @@ if(BUILD_TESTING)
 	)
 
 	target_include_directories(rnt_fs_apply_tests PRIVATE
-		\${CMAKE_SOURCE_DIR}/src
+		${CMAKE_SOURCE_DIR}/src
 	)
 
 	add_test(NAME rnt_fs_apply COMMAND rnt_fs_apply_tests)
