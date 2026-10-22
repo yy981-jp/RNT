@@ -1,6 +1,7 @@
 #include <core/solver.h>
 
 #include <algorithm>
+#include <unordered_map>
 
 
 void Solver::diff() {
@@ -21,29 +22,29 @@ void Solver::diff() {
 }
 
 void Solver::check_collide() {
-	for (const auto& e: before) {
+	for (const auto& e: before)
 		beforeLocation[{e.parent, e.name}] = e.id;
-	}
 
-	std::unordered_map<Location, EntryId, LocationHash> changedLocation;
+	std::unordered_map<fs::path, EntryId> changedLocation;
 
 	for (const auto& e: changed) {
-		auto [it, inserted] = changedLocation.emplace(
-			Location{e.parent, e.name},
-			e.id
-		);
+		const fs::path path = solvePath(changed, e.id).lexically_normal();
+		auto [it, inserted] = changedLocation.emplace(path, e.id);
 
-		if (!inserted && !e.isDir)
-			throw std::runtime_error("Final Path collision: " + e.name);
+		if (!inserted) {
+			const Entry& owner = changed[it->second];
+			if (!owner.isDir || !e.isDir)
+				throw std::runtime_error("Final Path collision: " + path.string());
+		}
 	}
 }
 
 /// @brief 現在位置の占有者から依存関係を作る
 void Solver::gen_dep() {
 	dependencies.assign(entry_size,EntryId::INVALID());
+
 	for (EntryId id: changedId) {
 		const Entry& e = changed[id];
-		const Entry& beforeEntry = before[id];
 
 		Location target{
 			e.parent,
@@ -55,7 +56,7 @@ void Solver::gen_dep() {
 		if (it == beforeLocation.end())
 			continue;
 
-		EntryId owner = it->second;
+		const EntryId owner = it->second;
 
 		// 自分自身なら依存不要
 		if (owner == id)
@@ -64,11 +65,45 @@ void Solver::gen_dep() {
 		// ownerが移動した後でentryを移動する必要がある
 		dependencies[id] = owner;
 	}
+
+	// If multiple directories have the same final path, make every other
+	// directory wait for a stable merge target. Prefer the entry already at
+	// that path, then one whose name does not change.
+	std::unordered_map<fs::path, std::vector<EntryId>> finalDirectories;
+	for (const Entry& e: changed) {
+		if (!e.isDir) continue;
+		finalDirectories[solvePath(changed, e.id).lexically_normal()].push_back(e.id);
+	}
+
+	for (const auto& [path, ids]: finalDirectories) {
+		if (ids.size() < 2) continue;
+
+		auto score = [&](EntryId id) {
+			const Entry& old = before[id];
+			const Entry& now = changed[id];
+			if (solvePath(before, id).lexically_normal() == path)
+				return 0;
+			if (old.name == now.name)
+				return 1;
+			return 2;
+		};
+
+		EntryId winner = ids.front();
+		for (EntryId id: ids) {
+			if (score(id) < score(winner))
+				winner = id;
+		}
+
+		for (EntryId id: ids) {
+			if (id == winner)
+				continue;
+			dependencies[id] = winner;
+		}
+	}
 }
 
 void Solver::solveDep() {
 	std::vector<bool> processed(entry_size, false);
-	// 高速化のため
 	fsOperates.reserve(entry_size);
 
 	for (const EntryId& targetId: changedId) {
@@ -76,7 +111,6 @@ void Solver::solveDep() {
 
 		if (trace.looped()) solveLoop(trace);
 		else solveChain(trace.chain);
-
 	}
 }
 
@@ -85,17 +119,16 @@ DepTrace Solver::traceDep(EntryId targetId, std::vector<bool>& processed) {
 	EntryId curId = targetId;
 
 	while (curId.isValid()) {
-		if (processed[curId]) {
+		if (processed[curId])
 			break;
-		}
 
 		processed[curId] = true;
 		result.chain.push_back(curId);
 
 		const EntryId& dependOn = dependencies[curId];
 
-		// 依存関係の終端
-		if (!dependOn.isValid()) break;
+		if (!dependOn.isValid())
+			break;
 
 		auto it = std::ranges::find(result.chain, dependOn);
 
@@ -117,7 +150,8 @@ void Solver::solveChain(const std::vector<EntryId>& chain) {
 		fsOperates.emplace_back(FsOperate{
 			.id = e,
 			.parent = changed[e].parent,
-			.name = changed[e].name
+			.name = changed[e].name,
+			.isDir = changed[e].isDir
 		});
 	}
 }
@@ -131,6 +165,7 @@ void Solver::solveLoop(const DepTrace& trace) {
 
 	fsOperates.emplace_back(FsOperate{
 		.id = edge,
+		.isDir = changed[edge].isDir,
 		.targetPath = tmp
 	});
 
@@ -140,14 +175,16 @@ void Solver::solveLoop(const DepTrace& trace) {
 		fsOperates.emplace_back(FsOperate{
 			.id = e,
 			.parent = changed[e].parent,
-			.name = changed[e].name
+			.name = changed[e].name,
+			.isDir = changed[e].isDir
 		});
 	}
 
 	fsOperates.emplace_back(FsOperate{
 		.id = edge,
 		.parent = changed[edge].parent,
-		.name = changed[edge].name
+		.name = changed[edge].name,
+		.isDir = changed[edge].isDir
 	});
 
 	// loopの外側
@@ -157,7 +194,8 @@ void Solver::solveLoop(const DepTrace& trace) {
 		fsOperates.emplace_back(FsOperate{
 			.id = e,
 			.parent = changed[e].parent,
-			.name = changed[e].name
+			.name = changed[e].name,
+			.isDir = changed[e].isDir
 		});
 	}
 }
