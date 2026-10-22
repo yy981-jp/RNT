@@ -106,7 +106,11 @@ void Solver::solveDep() {
 	std::vector<bool> processed(entry_size, false);
 	fsOperates.reserve(entry_size);
 
-	for (const EntryId& targetId: changedId) {
+	// Process descendants first. When an ancestor is merged into another
+	// directory, this lets renamed/moved children leave their old paths before
+	// the merge recursively consumes the source directory tree.
+	for (auto it = changedId.rbegin(); it != changedId.rend(); ++it) {
+		const EntryId& targetId = *it;
 		DepTrace trace = traceDep(targetId, processed);
 
 		if (trace.looped()) solveLoop(trace);
