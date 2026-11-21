@@ -23,7 +23,7 @@ struct Ents {
 int main(int argc, char *argv[]) {
 	SDLApp sdlapp;
 	Config config((getDataPath() / "config.json").string());
-	CLI::App app{"RNT : Copyright (c) 2026 yy981"};
+	CLI::App app{"RNT v1.1 : Copyright (c) 2026 yy981"};
 
 	int maxDepth = -1;
 	fs::path target;
