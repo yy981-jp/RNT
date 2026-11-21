@@ -1,7 +1,10 @@
+#include <CLI/CLI.hpp>
+
 #include <core/dir.h>
 #include <core/texter.h>
 #include <core/config.h>
 #include <core/solver.h>
+#include <core/fs.h>
 #include <util/ui.h>
 
 #include <iostream>
@@ -19,12 +22,16 @@ struct Ents {
 
 int main(int argc, char *argv[]) {
 	SDLApp sdlapp;
-
 	Config config((getDataPath() / "config.json").string());
+	CLI::App app{"RNT v1.1 : Copyright (c) 2026 yy981"};
 
+	int maxDepth = -1;
 	fs::path target;
-	if (argc < 2) target = fs::current_path();
-	else target = fs::path(argv[1]);
+	app.add_option("TargetDirectory", target, "Target Directory.")->default_val(fs::current_path().string());
+	app.add_option("--depth", maxDepth, "Set max depth. -1 means unlimited.")->default_val(-1);
+
+	CLI11_PARSE(app, argc, argv);
+
 	fs::current_path(target);
 
 
@@ -36,6 +43,8 @@ int main(int argc, char *argv[]) {
 
 	{
 		Ctx ctx{};
+		ctx.maxDepth = maxDepth;
+		ctx.limitedDepth = ctx.maxDepth >= 0;
 		dir(ctx, target);
 
 		entOrig = std::move( ctx.entries );
@@ -50,7 +59,7 @@ int main(int argc, char *argv[]) {
 	for (int loop = 0; loop < 50; loop++) {
 
 		try {
-		
+
 			// Ents ent;
 			{
 
@@ -71,9 +80,11 @@ int main(int argc, char *argv[]) {
 				}
 				fsOp = std::move(solver.solve());
 			}
-			
+
+			FsExecutor preview(entOrig);
 			for (const auto& e: fsOp) {
-				printf("%s   ->   %s\n", e.from.string().c_str(), e.to.string().c_str());
+				const auto [from, to] = preview.preview(e);
+				printf("%s   ->   %s\n", from.string().c_str(), to.string().c_str());
 			}
 
 			if ( !choice("Do you want to confirm this change?") ) {
@@ -81,8 +92,9 @@ int main(int argc, char *argv[]) {
 				return 0;
 			}
 
+			FsExecutor executor(entOrig);
 			for (const auto& e: fsOp) {
-				fs::rename(e.from,e.to);
+				executor.apply(e);
 			}
 
 			std::cout << "Done.\n";

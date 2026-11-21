@@ -26,6 +26,7 @@ add_executable(${EXE_NAME} ${SOURCES})
 target_include_directories(${EXE_NAME} PRIVATE
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/external/
+	${CMAKE_SOURCE_DIR}/external/CLI11/include
 )
 
 # External install prefix
@@ -50,3 +51,18 @@ target_compile_options(${EXE_NAME} PRIVATE
 	$<$<CONFIG:Release>:-O3>
 	$<$<CONFIG:RelWithDebInfo>:-O3 -g>
 )
+
+include(CTest)
+if(BUILD_TESTING)
+	add_executable(rnt_fs_apply_tests
+		tests/fs_apply.cpp
+		src/core/fs.cpp
+		src/core/solver.cpp
+	)
+
+	target_include_directories(rnt_fs_apply_tests PRIVATE
+		${CMAKE_SOURCE_DIR}/src
+	)
+
+	add_test(NAME rnt_fs_apply COMMAND rnt_fs_apply_tests)
+endif()

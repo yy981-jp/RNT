@@ -10,6 +10,8 @@ struct Ctx {
 	std::vector<Entry> entries;
 	std::stack<EntryId> parents;
 	int depth = 0;
+	bool limitedDepth = false;
+	int maxDepth = -1;
 	EntryId cid{0};
 };
 
